@@ -40,6 +40,13 @@ export class UI {
     this.loadingFill = el('div', 'tower-loading-fill', this.loadingBar);
     this.loadingText = el('div', 'tower-loading-text', this.loadingEl, t('loading'));
     this.startEl = el('button', 'tower-start', r, t('tapToStart'));
+    // How-to-play panel on the start screen (shown with Tap to Start).
+    this.howtoEl = el('div', 'tower-howto', r);
+    el('div', 'tower-howto-title', this.howtoEl, t('howtoTitle'));
+    for (const k of ['howtoWalk', 'howtoLook', 'howtoInteract', 'howtoSprint', 'howtoCamera', 'howtoSound']) {
+      el('div', 'tower-howto-row', this.howtoEl, t(k));
+    }
+    this.howtoEl.style.display = 'none';
     this.startEl.style.display = 'none';
     // HUD.
     this.hud = el('div', 'tower-hud', r);
@@ -48,6 +55,16 @@ export class UI {
     this.objectiveEl = el('div', 'tower-objective', this.hud, `${t('objective')}: ${t('objectiveText')}`);
     this.promptEl = el('div', 'tower-prompt', this.hud, '');
     this.toastEl = el('div', 'tower-toast', this.hud, '');
+    this.liftIndicator = el('div', 'tower-lift-indicator', this.hud, '');
+    this.liftIndicator.style.display = 'none';
+    // NPC dialogue box (hidden until the player talks to someone).
+    this.dialogueEl = el('div', 'tower-dialogue', r);
+    this.dialogueName = el('div', 'tower-dialogue-name', this.dialogueEl, '');
+    this.dialogueText = el('div', 'tower-dialogue-text', this.dialogueEl, '');
+    this.dialogueBn = el('div', 'tower-dialogue-bn', this.dialogueEl, '');
+    const dlgClose = el('button', 'tower-dialogue-close', this.dialogueEl, t('dialogueClose'));
+    dlgClose.addEventListener('click', () => this._hideDialogue());
+    this.dialogueEl.style.display = 'none';
     this.hintEl = el('div', 'tower-hint', this.hud, t('helpText'));
     // Mini-map.
     this.mapWrap = el('div', 'tower-map-wrap', this.hud);
@@ -81,6 +98,8 @@ export class UI {
     el('div', 'tower-pause-title', this.pauseEl, t('pause'));
     const resume = el('button', 'tower-pause-btn', this.pauseEl, t('resume'));
     resume.addEventListener('click', () => this.setPaused(false));
+    this.soundBtn = el('button', 'tower-pause-btn', this.pauseEl, t('soundOn'));
+    this.soundBtn.addEventListener('click', () => bus.emit('audio:mute'));
     const help = el('button', 'tower-pause-btn', this.pauseEl, t('help'));
     help.addEventListener('click', () => { this.hintEl.style.display = 'block'; setTimeout(() => { this.hintEl.style.display = 'none'; }, 5000); });
     const quality = el('div', 'tower-quality', this.pauseEl);
@@ -172,19 +191,57 @@ export class UI {
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => this.toastEl.classList.remove('show'), 2500);
     });
-    bus.on('ui:objective-done', ({ text }) => {
-      this.objectiveEl.textContent = `✓ ${text}`;
-      this.objectiveEl.classList.add('done');
-    });
     bus.on('ui:camera', ({ mode }) => {
       this.btnCamera.textContent = `${t('camera')}: ${t(mode === 'first' ? 'camFirst' : mode === 'third' ? 'camThird' : 'camSecond')}`;
     });
     bus.on('ui:cutscene', ({ playing }) => {
       this.btnSkip.style.display = playing ? 'block' : 'none';
     });
-    bus.on('lift:panel', () => { this.liftPanel.style.display = 'block'; });
-    bus.on('lift:panel-hide', () => { this.liftPanel.style.display = 'none'; });
+    // Lift floor indicator: shows the current floor while riding.
+    this._lastLiftFloor = 0;
+    const showFloor = (f) => {
+      this._lastLiftFloor = f;
+      this.liftIndicator.textContent = f === 0 ? t('liftGround') : t('locationFloor', { n: f });
+      this.liftIndicator.style.display = f > 0 ? 'block' : 'none';
+    };
+    bus.on('lift:arrived', ({ floor }) => showFloor(Number(floor)));
+    bus.on('lift:panel', ({ current }) => {
+      this.liftPanel.style.display = 'block';
+      if (current != null) {
+        this._lastLiftFloor = current;
+        this.liftIndicator.textContent = current === 0 ? t('liftGround') : t('locationFloor', { n: current });
+        this.liftIndicator.style.display = 'block';
+      }
+    });
+    bus.on('lift:panel-hide', () => {
+      this.liftPanel.style.display = 'none';
+      if (this._lastLiftFloor === 0) this.liftIndicator.style.display = 'none';
+    });
+    // NPC dialogue box.
+    bus.on('npc:talk', ({ id, name_en, name_bn }) => {
+      const key = `greet${id[0].toUpperCase()}${id.slice(1)}`;
+      this.dialogueName.textContent = name_bn ? `${name_en} · ${name_bn}` : (name_en || id);
+      this.dialogueText.textContent = t(key);
+      this.dialogueBn.textContent = t(`${key}Bn`);
+      this.dialogueEl.style.display = 'block';
+      clearTimeout(this._dlgTimer);
+      this._dlgTimer = setTimeout(() => this._hideDialogue(), 8000);
+    });
+    // Mission chain objective text.
+    bus.on('mission:objective', ({ text, done }) => {
+      this.objectiveEl.textContent = done ? `✓ ${text}` : text;
+      this.objectiveEl.classList.toggle('done', done);
+    });
+    // Sound toggle label.
+    bus.on('audio:muted', ({ muted }) => {
+      if (this.soundBtn) this.soundBtn.textContent = muted ? t('soundOff') : t('soundOn');
+    });
     bus.on('cutscene:skip', () => { this.btnSkip.style.display = 'none'; });
+  }
+
+  _hideDialogue() {
+    this.dialogueEl.style.display = 'none';
+    clearTimeout(this._dlgTimer);
   }
 
   /** Loading progress 0..1. */
@@ -194,15 +251,17 @@ export class UI {
     this.loadingText.textContent = `${t('loading')} ${Math.round(p * 100)}%`;
   }
 
-  /** Loading done: show the Tap to Start button. */
+  /** Loading done: show the Tap to Start button + how-to panel. */
   ready() {
     this.loadingEl.style.display = 'none';
     this.startEl.style.display = 'block';
+    this.howtoEl.style.display = 'grid';
   }
 
-  /** Game started: hide the start button, show the HUD. */
+  /** Game started: hide the start button + how-to panel, show the HUD. */
   started() {
     this.startEl.style.display = 'none';
+    this.howtoEl.style.display = 'none';
     this.hud.style.display = 'block';
   }
 
