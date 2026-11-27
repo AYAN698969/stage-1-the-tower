@@ -1,0 +1,1 @@
+{"imports":{"three":"./vendor/three.module.js","three/addons/*":"./vendor/addons/*"},"name":"tower-game","private":true,"type":"module","version":"0.1.0"}
