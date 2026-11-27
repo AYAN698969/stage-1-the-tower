@@ -142,18 +142,9 @@ export function buildStreet(ctx) {
     for (const [px, pz] of w.poles) collider.addBox(px - 0.15, pz - 0.15, px + 0.15, pz + 0.15);
   }
 
-  // --- neighbour blocks across the road + at the road ends ---
-  {
-    const geos = [];
-    for (const n of w.neighbours) {
-      geos.push(box(n.pos[0], n.h / 2, n.pos[1], n.w, n.h, n.d));
-      geos.push(box(n.pos[0], n.h + 0.15, n.pos[1], n.w + 0.3, 0.3, n.d + 0.3));
-      collider.addBox(n.pos[0] - n.w / 2, n.pos[1] - n.d / 2, n.pos[0] + n.w / 2, n.pos[1] + n.d / 2);
-    }
-    const nb = new THREE.Mesh(mergeGeometries(geos, false), mats.skyline);
-    nb.castShadow = false; nb.receiveShadow = false;
-    group.add(nb);
-  }
+  // --- neighbour blocks: REMOVED 2026-11-27 (polish pass) ---
+  // The old flat grey-blue boxes are replaced by the distant Dhaka skyline
+  // in src/world/skyline.js (varied towers + lit windows, all directions).
 
   // --- Bangla shop signs ---
   for (const s of w.signs) {
