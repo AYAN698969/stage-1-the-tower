@@ -1,7 +1,7 @@
 # Tower Game — 3D Asset Acquisition Report
 
 **Date:** 2026-11-27 · **Game:** STAGE 1 – THE TOWER (Three.js, 10-storey residential building, Bangladesh)
-**Delivered:** 36 models · **Missing:** 2 · **Total size:** 1,790 KB (1.75 MB) · **All files:** `assets/*.glb`
+**Delivered:** 39 models · **Missing:** 2 · **Total size:** 1,813 KB (1.77 MB) · **All files:** `assets/*.glb`
 **Manifest:** [`assets/manifest.json`](../assets/manifest.json)
 
 ## Summary
@@ -26,6 +26,7 @@ model are in `assets/manifest.json` and in the table below.
 
 | Logical name | Model title | Source | Licence | Author | Triangles | Size | Animations |
 |---|---|---|---|---|---|---|---|
+| ac_unit | Air Conditioner | Poly Pizza | CC0 | Quaternius | 946 | 11.4 KB | – |
 | armchair | Armchair | Poly Pizza | CC0 | CreativeTrio | 162 | 7.1 KB | – |
 | bed_double | Bed Double | Poly Pizza | CC0 | Kenney | 364 | 8.3 KB | – |
 | bench | Bench | Poly Pizza | CC0 | Quaternius | 376 | 7.0 KB | – |
@@ -37,9 +38,11 @@ model are in `assets/manifest.json` and in the table below.
 | chair_office | Office Chair | Poly Pizza | CC0 | Quaternius | 2,116 | 31.1 KB | – |
 | cng_tuktuk | Auto Rickshaw (Indian Bazaar Street and Temple) | 3DAssets.dev | CC0 | @3dassets | 596 | 19.0 KB | roll |
 | coffee_table | Coffee Table | Poly Pizza | CC0 | Kenney | 248 | 3.2 KB | – |
+| curtains | Curtains Double | Poly Pizza | CC0 | Quaternius | 320 | 5.6 KB | – |
 | desk | Desk | Poly Pizza | CC0 | Quaternius | 2,640 | 28.4 KB | – |
 | dining_chair | Chair | Poly Pizza | CC0 | Quaternius | 216 | 4.8 KB | – |
 | dining_table | Table | Poly Pizza | CC0 | Quaternius | 1,500 | 18.9 KB | – |
+| drying_line | Towel Rack (drying-rack stand-in) | Poly Pizza | CC0 | Quaternius | 192 | 6.1 KB | – |
 | fridge | Kitchen Fridge | Poly Pizza | CC0 | Quaternius | 404 | 6.6 KB | – |
 | girl ★ | Animated Woman | Poly Pizza | CC0 | Quaternius | 1,908 | 349.2 KB | 10 (Idle, Walking, Running, Jump, Sitting, PickUp, Punch, Death…) |
 | kitchen_counter | Kitchen Cabinet | Poly Pizza | CC0 | Kenney | 188 | 5.5 KB | – |
