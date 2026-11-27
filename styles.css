@@ -1,0 +1,67 @@
+/* STAGE 1 - THE TOWER: mobile-first UI. Landscape phone, safe-area aware. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #101418; }
+#game-root { position: fixed; inset: 0; overflow: hidden; touch-action: none; overscroll-behavior: none; }
+#game-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.tower-ui { position: absolute; inset: 0; pointer-events: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #fff; }
+.tower-ui button { pointer-events: auto; font-family: inherit; }
+
+/* Loading + start */
+.tower-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(160deg, #1d4d2b, #12351d 60%, #0c2413); pointer-events: auto; }
+.tower-loading-title { font-size: 34px; font-weight: 800; letter-spacing: 1px; }
+.tower-loading-sub { font-size: 22px; opacity: .85; }
+.tower-loading-bar { width: min(70vw, 320px); height: 10px; border-radius: 6px; background: rgba(255,255,255,.18); overflow: hidden; }
+.tower-loading-fill { height: 100%; width: 0%; background: #ffd23f; border-radius: 6px; transition: width .2s; }
+.tower-loading-text { font-size: 14px; opacity: .8; }
+.tower-start { position: absolute; inset: 0; margin: auto; width: min(72vw, 300px); height: 64px; border: 0; border-radius: 14px; background: #ffd23f; color: #222; font-size: 22px; font-weight: 800; box-shadow: 0 6px 24px rgba(0,0,0,.45); }
+
+/* HUD */
+.tower-hud { position: absolute; inset: 0; display: none; }
+.tower-crosshair { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,255,255,.9); box-shadow: 0 0 4px rgba(0,0,0,.7); }
+.tower-location { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); padding: 6px 10px; border-radius: 8px; background: rgba(0,0,0,.55); font-size: 14px; font-weight: 700; }
+.tower-objective { position: absolute; top: calc(44px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); padding: 5px 10px; border-radius: 8px; background: rgba(0,0,0,.45); font-size: 13px; }
+.tower-objective.done { background: rgba(31,111,59,.85); }
+.tower-prompt { position: absolute; left: 50%; bottom: 118px; transform: translateX(-50%); padding: 7px 14px; border-radius: 20px; background: rgba(0,0,0,.6); font-size: 14px; font-weight: 600; display: none; }
+.tower-prompt:not(:empty) { display: block; }
+.tower-toast { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 9px 16px; border-radius: 10px; background: rgba(0,0,0,.7); font-size: 15px; font-weight: 600; opacity: 0; transition: opacity .25s; }
+.tower-toast.show { opacity: 1; }
+.tower-hint { position: absolute; left: 50%; bottom: 170px; transform: translateX(-50%); max-width: 86vw; padding: 8px 12px; border-radius: 10px; background: rgba(0,0,0,.6); font-size: 12.5px; text-align: center; }
+
+/* Mini-map */
+.tower-map-wrap { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); text-align: center; }
+.tower-map { width: 110px; height: 110px; border-radius: 10px; border: 2px solid rgba(255,255,255,.5); background: rgba(0,0,0,.4); }
+.tower-map-label { font-size: 11px; opacity: .85; margin-top: 2px; text-shadow: 0 1px 2px #000; }
+
+/* Touch controls */
+.tower-touch { position: absolute; inset: 0; }
+.tower-touch.no-touch .tower-joy-base, .tower-touch.no-touch .tower-look { display: none; }
+.tower-joy-base { position: absolute; left: calc(18px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); width: 124px; height: 124px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35); pointer-events: auto; touch-action: none; }
+.tower-joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,.55); transform: translate(-50%, -50%); }
+.tower-look { position: absolute; right: 0; top: 0; width: 55%; height: 100%; pointer-events: auto; touch-action: none; }
+.tower-btn { position: absolute; min-width: 48px; min-height: 48px; border: 0; border-radius: 12px; background: rgba(0,0,0,.55); color: #fff; font-size: 14px; font-weight: 700; padding: 10px 12px; }
+.tower-btn-interact { right: calc(18px + env(safe-area-inset-right)); bottom: calc(96px + env(safe-area-inset-bottom)); background: #ffd23f; color: #222; font-size: 15px; display: none; }
+.tower-btn-sprint { right: calc(18px + env(safe-area-inset-right)); bottom: calc(158px + env(safe-area-inset-bottom)); }
+.tower-btn-sprint.on { background: #1f6f3b; }
+.tower-btn-camera { right: calc(96px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); }
+.tower-btn-menu { right: calc(18px + env(safe-area-inset-right)); top: calc(128px + env(safe-area-inset-top)); }
+.tower-btn-map { right: calc(18px + env(safe-area-inset-right)); top: calc(184px + env(safe-area-inset-top)); }
+.tower-btn-skip { position: absolute; right: calc(16px + env(safe-area-inset-right)); top: calc(16px + env(safe-area-inset-top)); min-width: 64px; min-height: 48px; border: 0; border-radius: 12px; background: rgba(0,0,0,.6); color: #fff; font-size: 15px; font-weight: 700; }
+
+/* Lift panel */
+.tower-lift { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86vw, 340px); padding: 16px; border-radius: 16px; background: rgba(16,20,16,.92); pointer-events: auto; }
+.tower-lift-title { font-size: 17px; font-weight: 800; margin-bottom: 12px; text-align: center; }
+.tower-lift-btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.tower-lift-btn { min-height: 48px; border: 0; border-radius: 10px; background: #2a3a2e; color: #fff; font-size: 18px; font-weight: 700; }
+.tower-lift-btn:active { background: #1f6f3b; }
+
+/* Pause menu */
+.tower-pause { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(0,0,0,.72); pointer-events: auto; }
+.tower-pause-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.tower-pause-btn { min-width: 220px; min-height: 48px; border: 0; border-radius: 12px; background: #2a3a2e; color: #fff; font-size: 16px; font-weight: 700; }
+.tower-quality { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.tower-quality-btn { min-height: 44px; border: 0; border-radius: 10px; background: #2a3a2e; color: #fff; font-size: 14px; font-weight: 700; padding: 8px 12px; }
+
+@media (orientation: portrait) {
+  .tower-map { width: 84px; height: 84px; }
+}
