@@ -1,12 +1,14 @@
 /**
  * Player: movement + collision, stairs, lift riding, 3 camera modes
  * (first / third / second person), visible girl character, interaction
- * raycast (doors, lift call buttons, roof door), location + objective.
+ * (proximity: NPC talk + light switches; raycast: doors, lift call
+ * buttons, roof door), footsteps, location + objective.
  */
 import * as THREE from 'three';
 import { normalizeModel, findClip } from '../core/assets.js';
 import { Collider2D, stairHeightAt, inStairwell } from '../core/collision.js';
 import { bus } from '../core/events.js';
+import { t } from '../i18n/strings.js';
 
 const INTERACT_RANGE = 1.8;
 const EYE = 1.6;
@@ -30,6 +32,8 @@ export class Player {
     this.lastValid = this.pos.clone();
     this.lastValidFloor = 0;
     this.objectiveDone = false;
+    this._stepAcc = 0;
+    this._lastPos = this.pos.clone();
     this._ray = new THREE.Raycaster();
     this._ray.far = INTERACT_RANGE;
     this._center = new THREE.Vector2(0, 0);
@@ -126,6 +130,18 @@ export class Player {
     } else {
       this.pos.x += dx;
       this.pos.z += dz;
+    }
+
+    // --- footsteps (one per stride while moving) ---
+    const moved = Math.hypot(this.pos.x - this._lastPos.x, this.pos.z - this._lastPos.z);
+    this._lastPos.copy(this.pos);
+    if (this.speed > 0.5 && moved > 0) {
+      this._stepAcc += moved;
+      const stride = sprint ? 0.45 : 0.6;
+      if (this._stepAcc >= stride) {
+        this._stepAcc = 0;
+        bus.emit('audio:footstep', { sprint });
+      }
     }
 
     // --- stairs / floor height ---
@@ -248,23 +264,39 @@ export class Player {
 
   _updateInteraction() {
     const cam = this.ctx.engine.camera;
-    this._ray.setFromCamera(this._center, cam);
-    const targets = [this.ctx.doors.mesh, ...this.ctx.lift.callButtons];
-    if (this.ctx.roofDoor) targets.push(this.ctx.roofDoor);
-    const hits = this._ray.intersectObjects(targets, false);
     let prompt = null;
     let target = null;
-    if (hits.length > 0) {
-      const h = hits[0];
-      if (h.object === this.ctx.doors.mesh) {
-        const door = this.ctx.doors.doorFromInstanceId(h.instanceId);
-        if (door && !door.auto) { prompt = 'Open door'; target = { type: 'door', door }; }
-      } else if (h.object.userData?.type === 'lift-call') {
-        prompt = 'Call lift';
-        target = { type: 'lift-call', floor: h.object.userData.floor };
-      } else if (h.object === this.ctx.roofDoor) {
-        prompt = 'Roof door';
-        target = { type: 'roof' };
+    // 1) Proximity: talk to an NPC, or use a light switch — nearest wins,
+    // so a resident standing next to a switch doesn't shadow it.
+    const npc = this.ctx.npcs?.nearest(this.pos);
+    const sw = this._nearestSwitch();
+    const npcD = npc ? Math.hypot(npc.pos.x - this.pos.x, npc.pos.z - this.pos.z) : Infinity;
+    const swD = sw ? Math.hypot(sw.pos.x - this.pos.x, sw.pos.y - (this.pos.y + EYE), sw.pos.z - this.pos.z) : Infinity;
+    if (npc && npcD <= swD) {
+      prompt = t('promptTalkNpc', { name: npc.def.name_en || npc.def.id });
+      target = { type: 'npc', npc };
+    } else if (sw) {
+      prompt = t('promptLightSwitch');
+      target = { type: 'light', id: sw.id };
+    }
+    // 3) Crosshair raycast: doors, lift call buttons, roof door.
+    if (!target) {
+      this._ray.setFromCamera(this._center, cam);
+      const targets = [this.ctx.doors.mesh, ...this.ctx.lift.callButtons];
+      if (this.ctx.roofDoor) targets.push(this.ctx.roofDoor);
+      const hits = this._ray.intersectObjects(targets, false);
+      if (hits.length > 0) {
+        const h = hits[0];
+        if (h.object === this.ctx.doors.mesh) {
+          const door = this.ctx.doors.doorFromInstanceId(h.instanceId);
+          if (door && !door.auto) { prompt = 'Open door'; target = { type: 'door', door }; }
+        } else if (h.object.userData?.type === 'lift-call') {
+          prompt = 'Call lift';
+          target = { type: 'lift-call', floor: h.object.userData.floor };
+        } else if (h.object === this.ctx.roofDoor) {
+          prompt = 'Roof door';
+          target = { type: 'roof' };
+        }
       }
     }
     if (prompt !== this._prompt) {
@@ -273,10 +305,29 @@ export class Player {
     }
     this._interactTarget = target;
     if (this.input.takeInteract() && target) {
-      if (target.type === 'door') this.ctx.doors.toggle(target.door);
+      if (target.type === 'npc') {
+        const def = target.npc.def;
+        bus.emit('npc:talk', { id: def.id, name_en: def.name_en, name_bn: def.name_bn });
+        bus.emit('mission:talk', { id: def.id });
+      } else if (target.type === 'light') {
+        bus.emit('light:toggle', { id: target.id });
+      } else if (target.type === 'door') this.ctx.doors.toggle(target.door);
       else if (target.type === 'lift-call') this.ctx.lift.call(target.floor);
       else if (target.type === 'roof') bus.emit('ui:toast', { text: 'Roof access closed' });
     }
+  }
+
+  /** Nearest light switch within 1.6 m of the player (eye height). */
+  _nearestSwitch() {
+    const list = this.ctx.lightSwitches;
+    if (!list) return null;
+    const eyeY = this.pos.y + EYE;
+    let best = null; let bestD = 1.6;
+    for (const s of list) {
+      const d = Math.hypot(s.pos.x - this.pos.x, s.pos.y - eyeY, s.pos.z - this.pos.z);
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    return best;
   }
 
   _updateLocation() {
@@ -285,12 +336,13 @@ export class Player {
       this._location = label;
       bus.emit('ui:location', { text: label });
     }
-    // Objective: reach flat 4B (living room).
+    // Objective: reach flat 4B (living room) — the mission chain owns the
+    // objective text now (see src/game/missions.js).
     if (!this.objectiveDone && this.floor === 4) {
       const flat = locateFlat(this.pos.x, this.pos.z, this.ctx.floorplan);
       if (flat === 'B') {
         this.objectiveDone = true;
-        bus.emit('ui:objective-done', { text: 'You reached flat 4B!' });
+        bus.emit('mission:flat');
       }
     }
   }
