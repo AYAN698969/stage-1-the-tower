@@ -1,0 +1,13 @@
+import { connectCDP, evalJs, sleep } from './cdp.mjs';
+const { send } = await connectCDP({});
+await send('Runtime.enable'); await send('Page.enable');
+await send('Page.navigate', { url: 'http://127.0.0.1:8000/index.html?debug=1' });
+await sleep(5000);
+console.log('hasGame:', await evalJs(send, '!!window.__game'));
+console.log('main.js fetch:', await evalJs(send, `(async () => (await fetch('src/main.js')).status)()`, true));
+console.log('three fetch:', await evalJs(send, `(async () => (await fetch('vendor/three.module.min.js')).status)()`, true));
+console.log('config import:', await evalJs(send, `import('./src/core/config.js').then(m => 'config OK').catch(e => 'CONFIG FAIL: ' + e.message)`, true));
+console.log('main import:', await evalJs(send, `import('./src/main.js').then(() => 'main imported').catch(e => 'MAIN FAIL: ' + e.message)`, true));
+await sleep(3000);
+console.log('hasGame after import:', await evalJs(send, '!!window.__game'));
+process.exit(0);

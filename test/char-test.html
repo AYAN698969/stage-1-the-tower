@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Character test</title>
+<style>body{margin:0;background:#9cc3e5}</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.min.js", "three/addons/": "../vendor/addons/" } }
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+import { normalizeModel, findClip } from '../src/core/assets.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(960, 540);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9cc3e5);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a5f, 1.2));
+const sun = new THREE.DirectionalLight(0xfff2dd, 2.5);
+sun.position.set(5, 10, 7);
+scene.add(sun);
+const camera = new THREE.PerspectiveCamera(50, 960 / 540, 0.1, 100);
+camera.position.set(0, 1.2, 7);
+camera.lookAt(0, 0.9, 0);
+// Ground grid for scale reference.
+const grid = new THREE.GridHelper(10, 10, 0x333333, 0x666666);
+scene.add(grid);
+
+const loader = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder);
+const mixers = [];
+const info = [];
+async function add(name, x, useClone, useNormalize) {
+  const gltf = await loader.loadAsync('../assets/' + name + '.glb');
+  let obj = gltf.scene;
+  if (useClone) obj = cloneSkinned(obj);
+  let wrap = obj;
+  if (useNormalize) wrap = normalizeModel(obj, [0.6, 1.7, 0.6]);
+  wrap.position.set(x, 0, 0);
+  scene.add(wrap);
+  const mixer = new THREE.AnimationMixer(wrap);
+  const idle = findClip(gltf.animations, 'idle');
+  if (idle) { mixer.clipAction(idle).play(); }
+  mixers.push(mixer);
+  const box = new THREE.Box3().setFromObject(wrap);
+  const size = box.getSize(new THREE.Vector3());
+  info.push(`${name} clone=${useClone} norm=${useNormalize} box=[${size.toArray().map(v => v.toFixed(2)).join(', ')}] idle=${idle ? idle.name : 'NONE'}`);
+  return wrap;
+}
+await add('girl', -2.2, false, false);   // original, raw scale
+await add('girl', 0, true, true);        // clone + normalize (as the game does)
+await add('woman', 2.2, true, true);     // woman clone + normalize
+window.__charTest = { info, done: true };
+console.log(info.join('\n'));
+const clock = new THREE.Clock();
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  for (const m of mixers) m.update(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
