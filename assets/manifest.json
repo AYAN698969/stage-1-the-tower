@@ -451,6 +451,39 @@
     "CharacterArmature|Wave"
    ],
    "note": "Distinct model from 'girl': different Quaternius Animated Woman (CharacterArmature rig, 24 animations); girl uses the lighter Armature-rig version."
+  },
+  "curtains": {
+   "file": "assets/curtains.glb",
+   "title": "Curtains Double",
+   "source": "Poly Pizza",
+   "url": "https://poly.pizza/m/kkeII96j9N",
+   "licence": "CC0",
+   "author": "Quaternius",
+   "triangles": 320,
+   "sizeKB": 5.6,
+   "animations": []
+  },
+  "ac_unit": {
+   "file": "assets/ac_unit.glb",
+   "title": "Air Conditioner",
+   "source": "Poly Pizza",
+   "url": "https://poly.pizza/m/amFuyE3IF6",
+   "licence": "CC0",
+   "author": "Quaternius",
+   "triangles": 946,
+   "sizeKB": 11.4,
+   "animations": []
+  },
+  "drying_line": {
+   "file": "assets/drying_line.glb",
+   "title": "Towel Rack",
+   "source": "Poly Pizza",
+   "url": "https://poly.pizza/m/8R9fXwL11r",
+   "licence": "CC0",
+   "author": "Quaternius",
+   "triangles": 192,
+   "sizeKB": 6.1,
+   "animations": []
   }
  },
  "missing": [
