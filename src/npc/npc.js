@@ -72,5 +72,16 @@ export class NPCManager {
     }
   }
 
+  /** Nearest NPC within maxDist of a world position (same floor). */
+  nearest(pos, maxDist = 2.2) {
+    let best = null; let bestD = maxDist;
+    for (const n of this.list) {
+      if (Math.abs(n.pos.y - pos.y) > 1.5) continue;
+      const d = Math.hypot(n.pos.x - pos.x, n.pos.z - pos.z);
+      if (d < bestD) { bestD = d; best = n; }
+    }
+    return best;
+  }
+
   dispose() { this.group.removeFromParent(); }
 }
