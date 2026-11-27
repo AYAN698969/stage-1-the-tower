@@ -17,6 +17,7 @@ gltf-transform (meshopt + WebP textures ≤1024 px). Raw downloads are in `_sour
 
 | Model | Title | Author | Licence | Source |
 |---|---|---|---|---|
+| ac_unit | Air Conditioner | Quaternius | CC0 | https://poly.pizza/m/amFuyE3IF6 |
 | armchair | Armchair | CreativeTrio | CC0 | https://poly.pizza/m/myd1WSucAz |
 | bed_double | Bed Double | Kenney | CC0 | https://poly.pizza/m/wcmbCZ63mg |
 | bench | Bench | Quaternius | CC0 | https://poly.pizza/m/jLxjFxFRpw |
@@ -28,9 +29,11 @@ gltf-transform (meshopt + WebP textures ≤1024 px). Raw downloads are in `_sour
 | chair_office | Office Chair | Quaternius | CC0 | https://poly.pizza/m/UfKvrZBK6C |
 | cng_tuktuk | Auto Rickshaw (Indian Bazaar Street and Temple) | @3dassets | CC0 | https://3dassets.dev/assets/indian-bazaar-street-and-temple-auto-rickshaw-51b91c47 |
 | coffee_table | Coffee Table | Kenney | CC0 | https://poly.pizza/m/y4ZU5S7RuD |
+| curtains | Curtains Double | Quaternius | CC0 | https://poly.pizza/m/kkeII96j9N |
 | desk | Desk | Quaternius | CC0 | https://poly.pizza/m/V86Go2rlnq |
 | dining_chair | Chair | Quaternius | CC0 | https://poly.pizza/m/iMNqRzPwwe |
 | dining_table | Table | Quaternius | CC0 | https://poly.pizza/m/yYEEJzKxb4 |
+| drying_line | Towel Rack (drying-rack stand-in) | Quaternius | CC0 | https://poly.pizza/m/8R9fXwL11r |
 | fridge | Kitchen Fridge | Quaternius | CC0 | https://poly.pizza/m/8sjRm8fnHh |
 | girl | Animated Woman (player character) | Quaternius | CC0 | https://poly.pizza/m/9kF7eTDbhO |
 | kitchen_counter | Kitchen Cabinet | Kenney | CC0 | https://poly.pizza/m/tWyOLYYHPw |
