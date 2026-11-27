@@ -13,13 +13,15 @@ import { Input } from './core/input.js';
 import { Collider2D } from './core/collision.js';
 import { bus } from './core/events.js';
 import { buildBuilding } from './building/plan.js';
-import { buildFlatTemplates, instantiateFlat } from './building/flat.js';
+import { buildFlatTemplates, instantiateFlat, toggleFlatLight } from './building/flat.js';
 import { DoorSystem } from './building/doors.js';
 import { Lift } from './building/lift.js';
 import { buildStreet } from './world/street.js';
+import { buildSkyline } from './world/skyline.js';
 import { Vehicles } from './world/vehicles.js';
 import { NPCManager } from './npc/npc.js';
 import { Player } from './player/player.js';
+import { Missions } from './game/missions.js';
 import { CutscenePlayer } from './cutscenes/cutscenes.js';
 import { UI } from './ui/ui.js';
 import { AudioAmbience } from './audio/audio.js';
@@ -76,13 +78,26 @@ async function main() {
   const templates = buildFlatTemplates(ctx);
   const tintCache = new Map();
   const fans = [];
+  const lightSwitches = []; // { id, pos: Vector3 } — interactable switches
+  const flatLights = new Map(); // light id -> { light, lampMat }
   for (let f = 1; f <= building.floors; f++) {
     for (const flatKey of ['A', 'B', 'C']) {
-      const { group, fans: ff } = instantiateFlat(templates[flatKey], f, flatKey, tintCache);
+      const { group, fans: ff, light, lampMat, switchPos } = instantiateFlat(templates[flatKey], f, flatKey, tintCache);
       built.flatGroups[f].add(group);
       fans.push(...ff);
+      const id = `light_${f}${flatKey}`;
+      if (light && lampMat) flatLights.set(id, { light, lampMat });
+      if (switchPos) {
+        lightSwitches.push({
+          id,
+          pos: new THREE.Vector3(switchPos[0], f * fp.floorHeight + 1.25, switchPos[1]),
+        });
+      }
     }
   }
+  // Flat 4B starts dark — the player switches its light on (mission step 3).
+  const light4B = flatLights.get('light_4B');
+  if (light4B) { light4B.light.visible = false; light4B.lampMat.color.setHex(0x3a3a3a); }
   // Doors (floors 1..9 + ground).
   const doorSpecs = { ...built.doorSpecsByFloor, 0: built.groundDoorSpecs };
   const doors = new DoorSystem(ctx, doorSpecs);
@@ -90,9 +105,11 @@ async function main() {
   // Lift.
   const lift = new Lift({ ...ctx, scene: engine.scene });
   engine.scene.add(lift.group);
-  // Street + vehicles + NPCs.
+  // Street + skyline + vehicles + NPCs.
   const street = buildStreet(ctx);
   engine.scene.add(street.group);
+  const skyline = buildSkyline(ctx);
+  engine.scene.add(skyline.group);
   const vehicles = new Vehicles(ctx);
   engine.scene.add(vehicles.group);
   const npcs = new NPCManager(ctx);
@@ -107,12 +124,18 @@ async function main() {
   const ground = new Collider2D();
   for (const b of built.groundCollider.boxes) ground.boxes.push(b);
   for (const b of street.collider.boxes) ground.boxes.push(b);
+  for (const b of skyline.collider.boxes) ground.boxes.push(b);
   const colliders = { 0: ground };
   for (let f = 1; f <= building.floors; f++) colliders[f] = upper;
 
   // --- player ---
-  const player = new Player({ ...ctx, colliders, doors, lift, roofDoor: built.roofDoor });
+  const player = new Player({ ...ctx, colliders, doors, lift, roofDoor: built.roofDoor, npcs, lightSwitches });
   window.__game._player = player;
+
+  // --- missions (3-step chain) + light switches ---
+  const missions = new Missions();
+  void missions;
+  bus.on('light:toggle', ({ id }) => toggleFlatLight(flatLights, id));
 
   // --- cutscenes ---
   const cutscenes = new CutscenePlayer({ engine, cutscenes: configs.cutscenes, input });
